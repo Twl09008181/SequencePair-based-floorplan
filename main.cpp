@@ -7,6 +7,9 @@
 int LCS(std::vector<int>&S1,std::vector<int>&S2,std::vector<int>&Weight,std::vector<int>&Position);
 void reverse(std::vector<int>&vec);
 
+
+
+
 int main(){
 
 
