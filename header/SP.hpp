@@ -40,6 +40,7 @@ public:
     float alpha;
     std::pair<int,int> getPacking();
     int getHPWL();//need call getPacking first....
+    void updateSlack();//need call getPacking first
     /*
     operations
     */
@@ -48,7 +49,6 @@ public:
 
     //slack-based move
     void moveto(int moveBlock,int targetBlock,int relation); 
-    void updateSlack();//do not need get packing again. just like getPacking.
     void fixed_outline_based();
 //for debug
 //private:

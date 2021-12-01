@@ -343,6 +343,121 @@ void Floorplan::updateSlack(){
         y_slack.at(i) = ySize - rev_y_pos.at(i) - blockHeight.at(i) - y_pos.at(i);
     }
 }
-void Floorplan::fixed_outline_based(){
 
+std::list<int> get_criticalList(std::vector<int>&slack){
+
+    std::list<int>critical;
+    int s =  2147483647;
+    for(int i = 0;i < slack.size();i++){
+        if(slack.at(i) < s){
+            critical.clear();
+            s = slack.at(i);
+            critical.push_front(i);//add candidate
+        }else if(slack.at(i)==s)
+            critical.push_front(i);
+    }
+    return critical;
+}
+
+int try_rotate(Floorplan&fp,std::vector<int>&d1,std::vector<int>&d2,std::vector<int>&d2_slack,std::list<int>&critical){
+    double ratio = 1;
+    //some times may happen un-compact due to this candidate. so we need to rotate and move it .
+    //this stage do not rotate this candidate but only find it and return. 
+    int moveCandidate = -1; 
+    //doing rotate or find move candidate
+    // if height < width , then need to consider y_slack
+    //if y_slack is enough , do rotate directly 
+    for(auto c:critical){
+        if(d2.at(c) < d1.at(c)){ // rotate can decrease the x-span
+            if(d2_slack.at(c) >= d1.at(c))
+                fp.rotate(c);
+        }
+        else if (d2.at(c) > d1.at(c)){
+            if(double(d2.at(c))/d1.at(c) > ratio){
+                ratio = double(d2.at(c))/d1.at(c);
+                moveCandidate = c;
+            }
+        }
+    }
+    return moveCandidate;
+}
+
+int findbiggestSlack(std::vector<int>&slack,int origin){
+    int max = -1;
+    int target = -1;
+    for(int i = 0;i<slack.size();i++)
+    {
+        if(slack.at(i) > max&&origin!=i)
+        {
+            max = slack.at(i);
+            target = i;
+        }
+    }
+    return target;
+}
+
+std::pair<int,int>avgPos(std::vector<int>&pos_x,std::vector<int>&pos_y){
+
+    int avgx = 0;
+    int avgy = 0;
+    for(int i = 0;i<pos_x.size();i++)
+        avgx+=pos_x.at(i);
+    for(int i = 0;i<pos_y.size();i++)
+        avgy+=pos_y.at(i);
+    
+    return {avgx / pos_x.size() , avgy/pos_y.size()};
+}
+
+void Floorplan::fixed_outline_based(){
+    auto pack = getPacking();
+    updateSlack();
+    int w = pack.first;
+    int h = pack.second;
+
+    int count = 0;
+    //not feasible
+    while(w > outline.first || h > outline.second){
+        auto avg = avgPos(x_pos,y_pos);
+        if(w > outline.first){
+            auto critical_x = get_criticalList(x_slack);
+            int moveCandidate = try_rotate(*this,blockWidth,blockHeight,y_slack,critical_x);
+            if(moveCandidate!=-1){
+                int target = findbiggestSlack(y_slack,moveCandidate);
+                if(target!=-1)
+                if(y_slack.at(target) > blockWidth.at(moveCandidate)){//can pack after rotate
+                    rotate(moveCandidate);
+                    if(y_pos.at(target)>avg.second) // move to bellow 
+                        moveto(moveCandidate,target,3);
+                    else 
+                        moveto(moveCandidate,target,2);
+                }
+            }
+        }
+        else{
+            auto critical_y = get_criticalList(y_slack);
+            int moveCandidate = try_rotate(*this,blockHeight,blockWidth,x_slack,critical_y);
+            if(moveCandidate!=-1){
+                int target = findbiggestSlack(x_slack,moveCandidate);
+                if(target!=-1)
+                if(x_slack.at(target) > blockHeight.at(moveCandidate)){
+                    rotate(moveCandidate);
+                    if(x_pos.at(target)>avg.first) // move to left 
+                        moveto(moveCandidate,target,0);
+                    else 
+                        moveto(moveCandidate,target,1);
+                }
+            }
+        }
+        pack = getPacking();
+        updateSlack();
+        w = pack.first;
+        h = pack.second;
+        std::cout<<w<<" "<<h<<"\n";
+
+        //if stuck , enter SA procedure
+
+    }
+
+    //如果上述過程就能進入outline,則再用SA優化Area跟線長....
+    //如果不行,要能用SA的概念跳脫local 
 }

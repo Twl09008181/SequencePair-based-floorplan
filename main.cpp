@@ -24,9 +24,7 @@ int main(int argc,char * argv[]){
     std::cout<<"width : "<<packing.first<<" height "<<packing.second<<"\n";
 
 
-    fp.sp.showSequence();
-    fp.moveto(3,6,3);
-    fp.sp.showSequence();
+    fp.fixed_outline_based();
 
 
     /*
