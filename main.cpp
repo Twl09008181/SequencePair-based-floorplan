@@ -15,13 +15,26 @@ int main(int argc,char * argv[]){
         exit(1);
     }
 
+
+/*
     Floorplan fp(std::atof(argv[1]),argv[2],argv[3]);
 
     // initial packing using greedy approach
     //show the width , height
     auto packing = fp.getPacking();
     std::cout<<"width : "<<packing.first<<" height "<<packing.second<<"\n";
+*/
 
+
+    //get packing test using custom test
+
+    Floorplan fp;
+    fp.x_pos.resize(6);
+    fp.y_pos.resize(6);
+    fp.blockWidth= {4,3,3,2,4,6};
+    fp.blockHeight = {4,3,3,2,4,6};
+    fp.sp.S1 = {3,2,0,5,1,4};
+    fp.sp.S2 = {5,2,4,3,0,1};
 
     /*
     
@@ -47,7 +60,6 @@ void output(const std::string&filename,Floorplan&fp){
    }
 
    fp.getPacking();
-
     out << fp.outline.first<<" "<<fp.outline.second<<"\n";
     out << fp.blockHeight.size()<<"\n";
     for(int i = 0;i<fp.blockWidth.size();i++)

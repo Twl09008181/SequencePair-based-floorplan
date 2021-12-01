@@ -24,6 +24,7 @@ struct Net{
 class Floorplan{
 public:
     Floorplan(float alpha,const std::string&blockfile,const std::string&netfile);
+    Floorplan() = default;
     //File information
     std::pair<int,int>outline;
     std::vector<int>blockWidth;
