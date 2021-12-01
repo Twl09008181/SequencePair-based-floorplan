@@ -10,6 +10,11 @@
 struct SequencePair{
     std::vector<int>S1;
     std::vector<int>S2;
+    std::vector<int>S1_idx;//record the index of block id in S1. 
+    std::vector<int>S2_idx;
+    void swapBlock(bool s1,int id1,int id2); // if type = 0 , then swap only in sp1, type = 1 , swap only in sp2  , type = 2, swap both.  
+    void showSequence();
+    void showSequenceIdx();
 };
 
 
@@ -34,6 +39,16 @@ public:
     float alpha;
     std::pair<int,int> getPacking();
     int getHPWL();
+    /*
+    operations
+    */
+    void rotate(int blockId);
+    void swapBlock(int swapType,int id1,int id2);// if type = 0 , then swap only in sp1, type = 1 , swap only in sp2  , type = 2, swap both.  
+
+    //slack-based move
+    bool moveto(int moveBlock,int targetBlock,int relation); 
+    void updateSlack();//do not need get packing again. just like getPacking.
+    void fixed_outline_based();
 //for debug
 //private:
     std::map<std::string,int>blockMap;//key : name , val : id 
@@ -41,6 +56,10 @@ public:
     SequencePair sp;
     std::vector<int>x_pos;
     std::vector<int>y_pos;
+// to provide the guid of operation moving.
+    std::vector<int>x_slack;
+    std::vector<int>y_slack;
+
 };
 
 

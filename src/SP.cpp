@@ -19,6 +19,9 @@ void init_SP(const std::vector<int>&weight,SequencePair&sp){
     );
     sp.S1.resize(n);
     sp.S2.resize(n);
+    sp.S1_idx.resize(n);
+    sp.S2_idx.resize(n);
+
     //do swap 
     //let sum of first half weight  approximate equal to sum of other half weight.
     for(int i = n/4 ;i < n/2;i++){
@@ -35,14 +38,24 @@ void init_SP(const std::vector<int>&weight,SequencePair&sp){
         l1.at(i) = weight_map.at(i).first;
     for(int i = n/2;i<n;i++)
         l2.at(i-n/2) = weight_map.at(i).first;
-    for(int i = 0;i<n/2;i++)
+
+    //build sequence    
+    for(int i = 0;i<n/2;i++){
         sp.S1.at(i) = l1.at(i); 
-    for(int i = n/2;i<n;i++)
+        sp.S1_idx.at(sp.S1.at(i)) = i;
+    }
+    for(int i = n/2;i<n;i++){
         sp.S1.at(i) = l2.at(i-n/2); 
-    for(int i = 0;i<n-n/2;i++)
+        sp.S1_idx.at(sp.S1.at(i)) = i;
+    }
+    for(int i = 0;i<n-n/2;i++){
         sp.S2.at(i) = l2.at(i);
-    for(int i = n-n/2;i<n;i++)
+        sp.S2_idx.at(sp.S2.at(i)) = i;
+    }
+    for(int i = n-n/2;i<n;i++){
         sp.S2.at(i) = l1.at(i-(n-n/2));
+        sp.S2_idx.at(sp.S2.at(i)) = i;
+    }
 }
 
 void reverse(std::vector<int>&vec){
@@ -86,7 +99,52 @@ std::pair<int,int> Floorplan::getPacking(){
     return {width,height};
 }
 
+void Floorplan::rotate(int blockId){
+       int temp =  blockWidth.at(blockId);
+       blockWidth.at(blockId) = blockHeight.at(blockId);
+       blockHeight.at(blockId) = temp;
+}
 
+void SequencePair::showSequence(){
+
+
+    for(int i = 0;i<S1.size();i++)
+        std::cout<<S1.at(i)<<" ";
+    std::cout<<"\n";
+    for(int i = 0;i<S2.size();i++)
+        std::cout<<S2.at(i)<<" ";
+    std::cout<<"\n";
+
+}
+void SequencePair:: showSequenceIdx(){
+
+    for(int i = 0;i<S1.size();i++)
+        std::cout<<S1_idx.at(i)<<" ";
+    std::cout<<"\n";
+    for(int i = 0;i<S2.size();i++)
+        std::cout<<S2_idx.at(i)<<" ";
+    std::cout<<"\n";
+
+}
+void SequencePair:: swapBlock(bool s1,int id1,int id2) 
+{
+    auto & s = (s1) ? this->S1 : this->S2;
+    auto & s_idx = (s1) ? this->S1_idx : this->S2_idx;
+    int idx1 = s_idx.at(id1);
+    int idx2 = s_idx.at(id2);
+    std::swap(s.at(idx1),s.at(idx2));
+    std::swap(s_idx.at(id1),s_idx.at(id2));
+}
+void Floorplan::swapBlock(int swapType,int id1,int id2){// if type = 0 , then swap only in sp1, type = 1 , swap only in sp2  , type = 2, swap both.  
+    if(swapType==0)
+        sp.swapBlock(true,id1,id2);
+    else if(swapType==1)
+        sp.swapBlock(false,id1,id2);
+    else{
+        sp.swapBlock(true,id1,id2);
+        sp.swapBlock(false,id1,id2);
+    }
+}
 Floorplan::Floorplan(float alpha,const std::string&blockfile,const std::string&netfile){
     this->alpha = alpha;
     //std::cout<<"alpha : "<<alpha<<"\n";
