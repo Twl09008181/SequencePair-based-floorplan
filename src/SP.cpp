@@ -1,24 +1,90 @@
 #include"../header/SP.hpp" 
 #include<iostream>
+#include <algorithm>
 
-/*
-class Floorplan{
-public:
-    Floorplan(float alpha,const std::string&blockfile,const std::string&netfile);
-    //File information
-    std::pair<int,int>outline;
-    std::vector<int>blockWidth;
-    std::vector<int>blockHeight;
-    std::vector<coordinate>terminals;
-    std::vector<Net>Netlist;
-    float alpha;
-private:
-    std::map<std::string,int>blockMap;//key : name , val : id 
-    std::map<std::string,int>TerminalMap;//key : name , val : id 
-    SequencePair sp;
-};
-*/
+void init_SP(const std::vector<int>&weight,SequencePair&sp){
 
+    std::vector<std::pair<int,int>>weight_map;
+    int n = weight.size();
+    weight_map.resize(n);
+    for(int i = 0; i < n; i++){
+        weight_map.at(i).first = i; // block id 
+        weight_map.at(i).second = weight.at(i);//correspond weight
+    }
+    // sort by weight
+    std::sort(weight_map.begin(),weight_map.end(),
+        [](const std::pair<int,int>&p1,const std::pair<int,int>&p2){
+            return p1.second < p2.second;
+        }
+    );
+    sp.S1.resize(n);
+    sp.S2.resize(n);
+    //do swap 
+    //let sum of first half weight  approximate equal to sum of other half weight.
+    for(int i = n/4 ;i < n/2;i++){
+        std::pair<int,int>temp = weight_map.at(i);
+        weight_map.at(i) = weight_map.at(i + n/2);
+        weight_map.at(i + n/2) = temp; 
+    }
+
+    //S1 = <l1,l2>
+    //S2 = <l2,l1>
+    std::vector<int>l1;l1.resize(n/2);
+    std::vector<int>l2;l2.resize(n-n/2);
+    for(int i = 0;i<n/2;i++)
+        l1.at(i) = weight_map.at(i).first;
+    for(int i = n/2;i<n;i++)
+        l2.at(i-n/2) = weight_map.at(i).first;
+    for(int i = 0;i<n/2;i++)
+        sp.S1.at(i) = l1.at(i); 
+    for(int i = n/2;i<n;i++)
+        sp.S1.at(i) = l2.at(i-n/2); 
+    for(int i = 0;i<n-n/2;i++)
+        sp.S2.at(i) = l2.at(i);
+    for(int i = n-n/2;i<n;i++)
+        sp.S2.at(i) = l1.at(i-(n-n/2));
+}
+
+void reverse(std::vector<int>&vec){
+    for(int i = 0;i< vec.size()/2;i++){
+        int j = vec.size() - i - 1;
+        int temp = vec.at(i);
+        vec.at(i) = vec.at(j);
+        vec.at(j) = temp;
+    }
+}
+int LCS(std::vector<int>&S1,std::vector<int>&S2,std::vector<int>&Weight,std::vector<int>&Position){
+    std::vector<int>Indx_s2(S1.size(),0);
+    std::vector<int>LengthRecord(S1.size(),0);
+
+    //saving Indx_s2 info.  
+    for(int i = 0;i<S1.size();i++)
+        Indx_s2.at(S2.at(i)) = i;
+
+    for(int i = 0;i<S1.size();i++){
+        int blockId = S1.at(i);
+        int P = Indx_s2.at(blockId); //get blockId in S2's index.
+
+        Position.at(blockId) = LengthRecord.at(P);
+        int t = Position.at(blockId) + Weight.at(blockId);
+        for(int j = P;j < S2.size();j++)
+        {
+            if(t > LengthRecord[j])
+                LengthRecord[j] = t;
+            else 
+                break;
+        }
+    }
+    return *LengthRecord.rbegin();
+}
+
+std::pair<int,int> Floorplan::getPacking(){
+    int width =  LCS(sp.S1,sp.S2,blockWidth,x_pos);
+    reverse(sp.S1);
+    int height =  LCS(sp.S1,sp.S2,blockHeight,y_pos);
+    reverse(sp.S1);
+    return {width,height};
+}
 
 
 Floorplan::Floorplan(float alpha,const std::string&blockfile,const std::string&netfile){
@@ -94,4 +160,18 @@ Floorplan::Floorplan(float alpha,const std::string&blockfile,const std::string&n
     }
 
     net.close();
+    //init Sequence pair
+    init_SP(blockHeight,sp);
+
+   /* trivial init , but not good enough. 
+    sp.S1.resize(blockHeight.size());
+    sp.S2.resize(blockHeight.size());
+    for(int i = 0;i<blockHeight.size();i++)
+    {
+        sp.S1.at(i) = i;
+        sp.S2.at(i) = i;
+    }
+    */
+    x_pos.resize(blockWidth.size());
+    y_pos.resize(blockWidth.size());
 }

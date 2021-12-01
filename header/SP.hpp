@@ -31,10 +31,15 @@ public:
     std::vector<coordinate>terminals;
     std::vector<Net>Netlist;
     float alpha;
-private:
+    std::pair<int,int> getPacking();
+
+//for debug
+//private:
     std::map<std::string,int>blockMap;//key : name , val : id 
     std::map<std::string,int>TerminalMap;//key : name , val : id 
     SequencePair sp;
+    std::vector<int>x_pos;
+    std::vector<int>y_pos;
 };
 
 
