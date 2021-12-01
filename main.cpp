@@ -1,6 +1,6 @@
 #include<iostream>
 #include<vector>
-
+#include "header/SP.hpp"
 
 
 
@@ -10,30 +10,16 @@ void reverse(std::vector<int>&vec);
 
 
 
-int main(){
+int main(int argc,char * argv[]){
+
+    if(argc!=4){
+        std::cerr<<"please enter correct format!\n";
+        exit(1);
+    }
+
+    Floorplan fp(std::atof(argv[1]),argv[2],argv[3]);
 
 
-    std::vector<int>S1{3,2,0,5,1,4};
-    std::vector<int>S2{5,2,4,3,0,1};
-    std::vector<int>Width{4,3,3,2,4,6};
-    std::vector<int>Height{6,7,3,3,3,4};
-    
-    std::vector<int>Hpos(6,0);
-    std::vector<int>Vpos(6,0);
-    int HorizontalLength = LCS(S1,S2,Width,Hpos);
-    reverse(S1);
-    int VerticalLength = LCS(S1,S2,Height,Vpos);
-
-
-    std::cout<<"Horizontal L :"<<HorizontalLength<<"\n";
-    for(int i = 0;i<6;i++)
-        std::cout<<"block i x:"<<Hpos.at(i)<<" ";
-    std::cout<<"\n";
-
-    std::cout<<"Vertical L :"<<VerticalLength<<"\n";
-    for(int i = 0;i<6;i++)
-        std::cout<<"block i y:"<<Vpos.at(i)<<" ";
-    std::cout<<"\n";
     return 0;
 }
 

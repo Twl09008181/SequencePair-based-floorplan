@@ -5,6 +5,7 @@
 #include <map>
 #include<string>
 #include<fstream>
+#include <list>
 
 struct SequencePair{
     std::vector<int>S1;
@@ -16,8 +17,8 @@ struct coordinate{
     int x,y;
 };
 struct Net{
-    std::vector<int> blocks;//may move
-    std::vector<int>terminals;//fixed
+    std::list<int> blocks;//may move
+    std::list<int>terminals;//fixed
 };
 
 class Floorplan{
