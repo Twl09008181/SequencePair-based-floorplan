@@ -327,7 +327,21 @@ void Floorplan::moveto(int moveBlock,int targetBlock,int relation) {
 }
 
 void Floorplan::updateSlack(){
-
+    x_slack.clear();x_slack.resize(x_pos.size(),0);
+    y_slack.clear();y_slack.resize(x_pos.size(),0);
+    std::vector<int>rev_x_pos(x_pos.size(),0);
+    std::vector<int>rev_y_pos(x_pos.size(),0);
+    reverse(sp.S1);
+    reverse(sp.S2);
+    int xSize =  LCS(sp.S1,sp.S2,blockWidth,rev_x_pos);// from right
+    reverse(sp.S1);
+    int ySize =  LCS(sp.S1,sp.S2,blockWidth,rev_y_pos);//from top
+    //recover S2
+    reverse(sp.S2);
+    for(int i = 0;i<sp.S1.size();i++){
+        x_slack.at(i) = xSize - rev_x_pos.at(i) - blockWidth.at(i) - x_pos.at(i);
+        y_slack.at(i) = ySize - rev_y_pos.at(i) - blockHeight.at(i) - y_pos.at(i);
+    }
 }
 void Floorplan::fixed_outline_based(){
 

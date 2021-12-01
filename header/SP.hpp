@@ -39,7 +39,7 @@ public:
     std::vector<Net>Netlist;
     float alpha;
     std::pair<int,int> getPacking();
-    int getHPWL();
+    int getHPWL();//need call getPacking first....
     /*
     operations
     */
