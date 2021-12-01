@@ -24,11 +24,9 @@ int main(int argc,char * argv[]){
     std::cout<<"width : "<<packing.first<<" height "<<packing.second<<"\n";
 
 
-
-
-
-
-    //get packing test using custom test
+    fp.sp.showSequence();
+    fp.moveto(3,6,3);
+    fp.sp.showSequence();
 
 
     /*

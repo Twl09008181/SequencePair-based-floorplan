@@ -2,6 +2,14 @@
 #include<iostream>
 #include <algorithm>
 
+void SequencePair::setIdx()
+{
+    for(int i = 0;i < S1.size();i++)
+        S1_idx.at(S1.at(i)) = i;
+    for(int i = 0;i < S1.size();i++)
+        S2_idx.at(S2.at(i)) = i;
+}
+
 void init_SP(const std::vector<int>&weight,SequencePair&sp){
 
     std::vector<std::pair<int,int>>weight_map;
@@ -40,22 +48,16 @@ void init_SP(const std::vector<int>&weight,SequencePair&sp){
         l2.at(i-n/2) = weight_map.at(i).first;
 
     //build sequence    
-    for(int i = 0;i<n/2;i++){
+    for(int i = 0;i<n/2;i++)
         sp.S1.at(i) = l1.at(i); 
-        sp.S1_idx.at(sp.S1.at(i)) = i;
-    }
-    for(int i = n/2;i<n;i++){
+    for(int i = n/2;i<n;i++)
         sp.S1.at(i) = l2.at(i-n/2); 
-        sp.S1_idx.at(sp.S1.at(i)) = i;
-    }
-    for(int i = 0;i<n-n/2;i++){
+    for(int i = 0;i<n-n/2;i++)
         sp.S2.at(i) = l2.at(i);
-        sp.S2_idx.at(sp.S2.at(i)) = i;
-    }
-    for(int i = n-n/2;i<n;i++){
+    for(int i = n-n/2;i<n;i++)
         sp.S2.at(i) = l1.at(i-(n-n/2));
-        sp.S2_idx.at(sp.S2.at(i)) = i;
-    }
+    
+    sp.setIdx();
 }
 
 void reverse(std::vector<int>&vec){
@@ -106,8 +108,6 @@ void Floorplan::rotate(int blockId){
 }
 
 void SequencePair::showSequence(){
-
-
     for(int i = 0;i<S1.size();i++)
         std::cout<<S1.at(i)<<" ";
     std::cout<<"\n";
@@ -242,4 +242,93 @@ Floorplan::Floorplan(float alpha,const std::string&blockfile,const std::string&n
     x_pos.resize(blockWidth.size());
     y_pos.resize(blockWidth.size());
     
+}
+
+
+int Floorplan::getHPWL(){
+    int length = 0;
+    for(int i = 0;i< Netlist.size();i++){
+        auto &blk = Netlist.at(i).blocks;
+        auto &term = Netlist.at(i).terminals;
+        //empty net
+        if(blk.empty()&&term.empty())continue;
+        double l = 2147483647,d = 2147483647;
+        double r = 0, t = 0;
+        for(auto ptr = blk.begin();ptr!=blk.end();++ptr){
+            int blkid =  *ptr;
+            double x = x_pos.at(blkid) + blockWidth.at(blkid)  / 2; 
+            double y = y_pos.at(blkid) + blockHeight.at(blkid) / 2;
+            if (x <  l)l = x;
+            if (x >  r)r = x;
+            if (y <  d)d = y;
+            if (y <  t)t = y;
+        }
+        for(auto ptr = term.begin();ptr!=term.end();++ptr){
+            int tid = *ptr;
+            double x = terminals.at(tid).x; 
+            double y = terminals.at(tid).y; 
+            if (x <  l)l = x;
+            if (x >  r)r = x;
+            if (y <  d)d = y;
+            if (y <  t)t = y;
+        }
+        int x_l = r-l;
+        int y_l = t-d;
+        length += (x_l + y_l);
+    }
+    return length;
+}
+
+
+
+void Floorplan::moveto(int moveBlock,int targetBlock,int relation) {
+    int target_s1_idx = sp.S1_idx.at(targetBlock);
+    int target_s2_idx = sp.S2_idx.at(targetBlock);
+    int s1_idx = sp.S1_idx.at(moveBlock);   
+    int s2_idx = sp.S2_idx.at(moveBlock);   
+
+
+    //如果目標本來就在右邊,則扣1
+    //如果目標在序列中為左邊,則目標當前的index為此moveblock將來的index
+    if(relation==0) { //put left
+        if(s1_idx < target_s1_idx)target_s1_idx -=1; 
+        if(s2_idx < target_s2_idx)target_s2_idx -=1; 
+    }
+    else if(relation==1) { //put right 
+        if(s1_idx > target_s1_idx)target_s1_idx +=1; 
+        if(s2_idx > target_s2_idx)target_s2_idx +=1; 
+    }
+    else if(relation==2){// put top
+        if(s1_idx < target_s1_idx)target_s1_idx -=1; 
+        if(s2_idx > target_s2_idx)target_s2_idx +=1; 
+    }
+    else if(relation==3){// put down 
+        if(s1_idx > target_s1_idx)target_s1_idx +=1; 
+        if(s2_idx < target_s2_idx)target_s2_idx -=1; 
+    }
+
+    if(s1_idx < target_s1_idx){
+        for(int i = s1_idx+1;i <=target_s1_idx;i++)
+            sp.S1.at(i-1) = sp.S1.at(i);
+    }else if(s1_idx > target_s1_idx){
+        for(int i = s1_idx-1;i >=target_s1_idx;i--)
+            sp.S1.at(i+1) = sp.S1.at(i);
+    }
+    if(s2_idx < target_s2_idx){
+        for(int i = s2_idx+1;i <=target_s2_idx;i++)
+            sp.S2.at(i-1) = sp.S2.at(i);
+    }else if(s2_idx > target_s2_idx){
+        for(int i = s2_idx-1;i >=target_s2_idx;i--)
+            sp.S2.at(i+1) = sp.S2.at(i);
+    }
+    sp.S1.at(target_s1_idx) = moveBlock;
+    sp.S2.at(target_s2_idx) = moveBlock;
+    sp.setIdx();
+}
+
+void Floorplan::updateSlack(){
+
+}
+void Floorplan::fixed_outline_based(){
+
 }

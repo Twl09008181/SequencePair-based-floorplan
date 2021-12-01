@@ -13,6 +13,7 @@ struct SequencePair{
     std::vector<int>S1_idx;//record the index of block id in S1. 
     std::vector<int>S2_idx;
     void swapBlock(bool s1,int id1,int id2); // if type = 0 , then swap only in sp1, type = 1 , swap only in sp2  , type = 2, swap both.  
+    void setIdx();
     void showSequence();
     void showSequenceIdx();
 };
@@ -46,7 +47,7 @@ public:
     void swapBlock(int swapType,int id1,int id2);// if type = 0 , then swap only in sp1, type = 1 , swap only in sp2  , type = 2, swap both.  
 
     //slack-based move
-    bool moveto(int moveBlock,int targetBlock,int relation); 
+    void moveto(int moveBlock,int targetBlock,int relation); 
     void updateSlack();//do not need get packing again. just like getPacking.
     void fixed_outline_based();
 //for debug
