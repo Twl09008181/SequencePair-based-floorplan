@@ -360,7 +360,7 @@ std::list<int> get_criticalList(std::vector<int>&slack){
 }
 
 int try_rotate(Floorplan&fp,std::vector<int>&d1,std::vector<int>&d2,std::vector<int>&d2_slack,std::list<int>&critical){
-    double ratio = 1;
+    int max_slack = 0;
     //some times may happen un-compact due to this candidate. so we need to rotate and move it .
     //this stage do not rotate this candidate but only find it and return. 
     int moveCandidate = -1; 
@@ -373,8 +373,8 @@ int try_rotate(Floorplan&fp,std::vector<int>&d1,std::vector<int>&d2,std::vector<
                 fp.rotate(c);
         }
         else if (d2.at(c) > d1.at(c)){
-            if(double(d2.at(c))/d1.at(c) > ratio){
-                ratio = double(d2.at(c))/d1.at(c);
+            if(d2_slack.at(c) > max_slack){
+                max_slack = d2_slack.at(c);
                 moveCandidate = c;
             }
         }
@@ -453,6 +453,8 @@ void Floorplan::fixed_outline_based(){
         w = pack.first;
         h = pack.second;
         std::cout<<w<<" "<<h<<"\n";
+        if(count++>200)
+        break;
 
         //if stuck , enter SA procedure
 
