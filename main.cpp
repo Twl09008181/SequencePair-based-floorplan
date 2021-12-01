@@ -6,8 +6,8 @@
 
 
 
-void output(const std::string&filename);
 
+void output(const std::string&filename,Floorplan&fp);
 int main(int argc,char * argv[]){
 
     if(argc!=5){
@@ -30,13 +30,30 @@ int main(int argc,char * argv[]){
     */
 
 
-    output(argv[4]);
+    output(argv[4],fp);
 
     return 0;
 }
 
-void output(const std::string&filename){
+void output(const std::string&filename,Floorplan&fp){
     /*
         not done
     */
+
+   std::ofstream out {filename};
+   if(!out){
+    std::cerr<<"file can't open!\n";
+    exit(1);
+   }
+
+   fp.getPacking();
+
+    out << fp.outline.first<<" "<<fp.outline.second<<"\n";
+    out << fp.blockHeight.size()<<"\n";
+    for(int i = 0;i<fp.blockWidth.size();i++)
+        out << fp.x_pos[i]<<" "<<fp.y_pos[i]<<" "<<fp.blockWidth[i]<<" "<<fp.blockHeight[i]<<" \n";
+    
+
+
+   out.close();
 }

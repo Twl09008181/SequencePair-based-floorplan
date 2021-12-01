@@ -32,7 +32,7 @@ public:
     std::vector<Net>Netlist;
     float alpha;
     std::pair<int,int> getPacking();
-
+    int getHPWL();
 //for debug
 //private:
     std::map<std::string,int>blockMap;//key : name , val : id 

@@ -163,7 +163,16 @@ Floorplan::Floorplan(float alpha,const std::string&blockfile,const std::string&n
     //init Sequence pair
     init_SP(blockHeight,sp);
 
-   /* trivial init , but not good enough. 
+   /* 
+    for(int i = 0 ;i<sp.S1.size();i++)
+        std::cout<<sp.S1.at(i)<<" ";
+    std::cout<<"\n";
+    for(int i = 0 ;i<sp.S2.size();i++)
+        std::cout<<sp.S2.at(i)<<" ";
+        */
+
+    /*
+   // trivial init , but not good enough. 
     sp.S1.resize(blockHeight.size());
     sp.S2.resize(blockHeight.size());
     for(int i = 0;i<blockHeight.size();i++)
@@ -174,4 +183,5 @@ Floorplan::Floorplan(float alpha,const std::string&blockfile,const std::string&n
     */
     x_pos.resize(blockWidth.size());
     y_pos.resize(blockWidth.size());
+    
 }
