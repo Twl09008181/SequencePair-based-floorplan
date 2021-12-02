@@ -16,15 +16,21 @@ int main(int argc,char * argv[]){
     }
 
 
-    Floorplan fp(std::atof(argv[1]),argv[2],argv[3]);
 
+    Floorplan fp(std::atof(argv[1]),argv[2],argv[3]);
     // initial packing using greedy approach
     //show the width , height
     auto packing = fp.getPacking();
     std::cout<<"width : "<<packing.first<<" height "<<packing.second<<"\n";
 
-
-    fp.fixed_outline_based();
+    // fp.fixed_outline_based();
+/*
+    fp.rotate(6);
+    fp.moveto(6,0,2);
+    fp.rotate(5);
+    packing = fp.getPacking();
+    std::cout<<"width : "<<packing.first<<" height "<<packing.second<<"\n";
+*/
 
 
     /*

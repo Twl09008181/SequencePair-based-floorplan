@@ -93,10 +93,61 @@ int LCS(std::vector<int>&S1,std::vector<int>&S2,std::vector<int>&Weight,std::vec
     return *LengthRecord.rbegin();
 }
 
+
+bool overlapIndim(std::vector<int>&Dimpos, std::vector<int>&DimWeight,int id1,int id2)
+{
+
+    int d_pos1s = Dimpos.at(id1);
+    int d_pos1e = Dimpos.at(id1) + DimWeight.at(id1);
+    int d_pos2s = Dimpos.at(id2);
+    int d_pos2e = Dimpos.at(id2) + DimWeight.at(id2);
+
+    if(d_pos1s>=d_pos2s&&d_pos1e<=d_pos2e)return true;
+    if(d_pos1s<=d_pos2s&&d_pos1e>=d_pos2e)return true;
+
+
+    if(d_pos1s < d_pos2s && d_pos1e > d_pos2s)return true;
+    if(d_pos2s < d_pos1s && d_pos2e > d_pos1s)return true;
+    return false;
+}
+
+int LCS_compact(std::vector<int>&S1,std::vector<int>&S2,std::vector<int>&Weight,std::vector<int>&Position,std::vector<int>&otherDim,std::vector<int>&otherDimpos){
+    std::vector<int>Indx_s2(S1.size(),0);
+    std::vector<int>LengthRecord(S1.size(),0);
+
+
+    int maxlength = 0;
+    //saving Indx_s2 info.  
+    for(int i = 0;i<S1.size();i++)
+        Indx_s2.at(S2.at(i)) = i;
+
+    for(int i = 0;i<S1.size();i++){
+        int blockId = S1.at(i);
+        int P = Indx_s2.at(blockId); //get blockId in S2's index.
+
+        Position.at(blockId) = LengthRecord.at(P);
+        int t = Position.at(blockId) + Weight.at(blockId);
+
+        for(int j = P;j < S2.size();j++)
+        {
+            if(overlapIndim(otherDimpos,otherDim,blockId,S2.at(j))&&t > LengthRecord[j]){
+                LengthRecord[j] = t;
+                if(t > maxlength)
+                    maxlength = t;
+            }
+        }
+    }
+    return maxlength; 
+}
 std::pair<int,int> Floorplan::getPacking(){
     int width =  LCS(sp.S1,sp.S2,blockWidth,x_pos);
     reverse(sp.S1);
-    int height =  LCS(sp.S1,sp.S2,blockHeight,y_pos);
+    //int height =  LCS(sp.S1,sp.S2,blockHeight,y_pos);
+    int height = LCS_compact(sp.S1,sp.S2,blockHeight,y_pos,blockWidth,x_pos);
+    reverse(sp.S1);
+    width = LCS_compact(sp.S1,sp.S2,blockWidth,x_pos,blockHeight,y_pos);
+    reverse(sp.S1);
+    height = LCS_compact(sp.S1,sp.S2,blockHeight,y_pos,blockWidth,x_pos);
     reverse(sp.S1);
     return {width,height};
 }
@@ -345,7 +396,6 @@ void Floorplan::updateSlack(){
 }
 
 std::list<int> get_criticalList(std::vector<int>&slack){
-
     std::list<int>critical;
     int s =  2147483647;
     for(int i = 0;i < slack.size();i++){
@@ -385,10 +435,8 @@ int try_rotate(Floorplan&fp,std::vector<int>&d1,std::vector<int>&d2,std::vector<
 int findbiggestSlack(std::vector<int>&slack,int origin){
     int max = -1;
     int target = -1;
-    for(int i = 0;i<slack.size();i++)
-    {
-        if(slack.at(i) > max&&origin!=i)
-        {
+    for(int i = 0;i<slack.size();i++){
+        if(slack.at(i) > max&&origin!=i){
             max = slack.at(i);
             target = i;
         }
@@ -413,7 +461,6 @@ void Floorplan::fixed_outline_based(){
     updateSlack();
     int w = pack.first;
     int h = pack.second;
-
     int count = 0;
     //not feasible
     while(w > outline.first || h > outline.second){
@@ -455,9 +502,7 @@ void Floorplan::fixed_outline_based(){
         std::cout<<w<<" "<<h<<"\n";
         if(count++>200)
         break;
-
         //if stuck , enter SA procedure
-
     }
 
     //如果上述過程就能進入outline,則再用SA優化Area跟線長....
