@@ -1,6 +1,10 @@
 #include"../header/SP.hpp" 
 #include<iostream>
 #include <algorithm>
+#include <set>
+
+
+#define INT_MAX_RANGE 2147483647 
 
 void SequencePair::setIdx()
 {
@@ -97,57 +101,144 @@ int LCS(std::vector<int>&S1,std::vector<int>&S2,std::vector<int>&Weight,std::vec
 bool overlapIndim(std::vector<int>&Dimpos, std::vector<int>&DimWeight,int id1,int id2)
 {
 
+
     int d_pos1s = Dimpos.at(id1);
     int d_pos1e = Dimpos.at(id1) + DimWeight.at(id1);
     int d_pos2s = Dimpos.at(id2);
     int d_pos2e = Dimpos.at(id2) + DimWeight.at(id2);
-
     if(d_pos1s>=d_pos2s&&d_pos1e<=d_pos2e)return true;
     if(d_pos1s<=d_pos2s&&d_pos1e>=d_pos2e)return true;
-
-
     if(d_pos1s < d_pos2s && d_pos1e > d_pos2s)return true;
     if(d_pos2s < d_pos1s && d_pos2e > d_pos1s)return true;
     return false;
 }
 
-int LCS_compact(std::vector<int>&S1,std::vector<int>&S2,std::vector<int>&Weight,std::vector<int>&Position,std::vector<int>&otherDim,std::vector<int>&otherDimpos){
-    std::vector<int>Indx_s2(S1.size(),0);
-    std::vector<int>LengthRecord(S1.size(),0);
+
+//find left,right,top,bottom
+std::vector<bool> findSide(SequencePair&sp,int block,int s1_dir,int s2_dir){
+
+    int s1_idx = sp.S1_idx.at(block);
+    int s2_idx = sp.S2_idx.at(block);
+    int n = sp.S1.size();
+
+    std::vector<bool>mark(n,false);
+
+    for(int i = s1_idx+s1_dir;(i>=0&&i<n);i+=s1_dir)
+        mark.at(sp.S1.at(i)) = true;
+
+    std::vector<bool>targetSide(n,false);
+    for(int i = s2_idx+s2_dir;(i>=0&&i<n);i+=s2_dir){
+        if(mark.at(sp.S2.at(i)))
+            targetSide.at(sp.S2.at(i)) = true;
+    }
+    return targetSide;
+}
 
 
-    int maxlength = 0;
-    //saving Indx_s2 info.  
-    for(int i = 0;i<S1.size();i++)
-        Indx_s2.at(S2.at(i)) = i;
 
-    for(int i = 0;i<S1.size();i++){
-        int blockId = S1.at(i);
-        int P = Indx_s2.at(blockId); //get blockId in S2's index.
+void shiftSp(std::vector<int>&sequence,int idxNow,int targetIdx){
 
-        Position.at(blockId) = LengthRecord.at(P);
-        int t = Position.at(blockId) + Weight.at(blockId);
+    if(idxNow==targetIdx)return ;
+    int dir = idxNow > targetIdx ? -1 : 1;
+    int id = sequence.at(idxNow);
+    for(int i = idxNow + dir;i!=targetIdx + dir;i+=dir){
+        sequence.at(i-dir) = sequence.at(i);
+    }
+    sequence.at(targetIdx) = id;
+}
 
-        for(int j = P;j < S2.size();j++)
-        {
-            if(overlapIndim(otherDimpos,otherDim,blockId,S2.at(j))&&t > LengthRecord[j]){
-                LengthRecord[j] = t;
-                if(t > maxlength)
-                    maxlength = t;
+//Hcstr
+// first : x+w
+// second : blockid
+// sorted by x+w 
+void compact_left_block(int block,int &xpos,SequencePair&sp,std::vector<int>&y_pos,std::vector<int>&blockHeight,std::vector<std::pair<int,int>>&Hcstr)
+{
+    //get left side
+    std::vector<bool>left = findSide(sp,block,-1,-1);
+    int final_s1_idx = sp.S1_idx.at(block);
+    int final_s2_idx = sp.S2_idx.at(block);
+
+    bool move = false;
+    int newXpos;
+    for(int i = 0;i < Hcstr.size();i++){
+        int id = Hcstr.at(i).second;
+        if(left.at(id)){ // is target side
+            if(overlapIndim(y_pos,blockHeight,block,id)) // overlap in y region
+            {
+                newXpos = Hcstr.at(i).first;
+                move = true;
+                break;
+            }  
+            int target_s1_idx = std::max(sp.S1_idx.at(id)-1,0);
+            int target_s2_idx = std::max(sp.S2_idx.at(id)-1,0);
+            if(y_pos.at(id) >= y_pos.at(block) + blockHeight.at(block)){ //id is higher than block , then put it bellow of the target.
+                if(final_s2_idx > target_s2_idx){//仍為右側
+                    final_s2_idx = target_s2_idx;
+                }
+            }
+            else{
+                if(final_s1_idx > target_s1_idx){//仍為右側
+                    final_s1_idx = target_s1_idx;
+                }
             }
         }
     }
-    return maxlength; 
+    if(move){
+        //shift SP
+        if(block==7){
+            sp.showSequence();
+
+            std::cout<<"origin s2 idx: "<<sp.S2_idx.at(block)<<" \n";
+            std::cout<<"final s2 idx: "<<final_s2_idx<<" \n";
+        }
+        shiftSp(sp.S1,sp.S1_idx.at(block),final_s1_idx);
+        shiftSp(sp.S2,sp.S2_idx.at(block),final_s2_idx);
+        sp.setIdx();
+        if(block==7){
+            sp.showSequence();
+            exit(1);
+        }
+
+        //need update the Hcstr? sure! 
+        int idx; //find Hcstr's idx
+        for(int i = 0;i<Hcstr.size();i++)
+            if(Hcstr.at(i).second==block)
+                idx = i;
+        int width = Hcstr.at(idx).first - xpos;
+        xpos = newXpos;
+        int newHcstr = xpos + width;//update
+        //insertion sort
+        int i = idx+1;
+        for(;i<Hcstr.size()&&Hcstr.at(i).first>newHcstr;i++){
+            Hcstr.at(i-1) = Hcstr.at(i);
+        }
+        Hcstr.at(i-1).first = newHcstr;
+        Hcstr.at(i-1).second = block;
+    }
 }
+
+void Floorplan::compact_left(){
+    
+    std::vector<std::pair<int,int>>Hcstr(blockHeight.size(),{0,0});
+    for(int i = 0;i<blockHeight.size();i++){
+        Hcstr.at(i).first = x_pos.at(i) + blockWidth.at(i);
+        Hcstr.at(i).second = i;
+    }
+    std::sort(Hcstr.begin(),Hcstr.end(),[](std::pair<int,int>&p1,std::pair<int,int>&p2){
+        return p1.first > p2.first;
+    });
+    int n = x_pos.size();
+    for(int i = 0;i<n;i++){
+        compact_left_block(i,x_pos.at(i),sp,y_pos,blockHeight,Hcstr);
+    }
+
+}
+
+
 std::pair<int,int> Floorplan::getPacking(){
     int width =  LCS(sp.S1,sp.S2,blockWidth,x_pos);
     reverse(sp.S1);
-    //int height =  LCS(sp.S1,sp.S2,blockHeight,y_pos);
-    int height = LCS_compact(sp.S1,sp.S2,blockHeight,y_pos,blockWidth,x_pos);
-    reverse(sp.S1);
-    width = LCS_compact(sp.S1,sp.S2,blockWidth,x_pos,blockHeight,y_pos);
-    reverse(sp.S1);
-    height = LCS_compact(sp.S1,sp.S2,blockHeight,y_pos,blockWidth,x_pos);
+    int height =  LCS(sp.S1,sp.S2,blockHeight,y_pos);
     reverse(sp.S1);
     return {width,height};
 }

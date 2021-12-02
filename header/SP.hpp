@@ -61,8 +61,15 @@ public:
     std::vector<int>x_slack;
     std::vector<int>y_slack;
 
+
+    void compact_left();
+    void compact_bottom();
+
 };
 
+void compact_left_block(int block,int &xpos,SequencePair&sp,std::vector<int>&y_pos,std::vector<int>&blockHeight,std::vector<std::pair<int,int>>&Hcstr);
 
 
+std::vector<bool> findSide(SequencePair&sp,int block,int s1_dir,int s2_dir);
+void shiftSp(std::vector<int>&sequence,int idxNow,int targetIdx);
 #endif
