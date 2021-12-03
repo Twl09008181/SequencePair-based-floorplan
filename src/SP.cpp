@@ -574,12 +574,11 @@ int Floorplan::getHPWL(){
 
 
 
-void Floorplan::moveto(int moveBlock,int targetBlock,int relation) {
+void Floorplan::moveto(int moveBlock,int targetBlock,int relation,int *OriginIdx1,int *OriginIdx2) {
     int target_s1_idx = sp.S1_idx.at(targetBlock);
     int target_s2_idx = sp.S2_idx.at(targetBlock);
     int s1_idx = sp.S1_idx.at(moveBlock);   
     int s2_idx = sp.S2_idx.at(moveBlock);   
-
 
     //如果目標本來就在右邊,則扣1
     //如果目標在序列中為左邊,則目標當前的index為此moveblock將來的index
@@ -600,22 +599,11 @@ void Floorplan::moveto(int moveBlock,int targetBlock,int relation) {
         if(s2_idx < target_s2_idx)target_s2_idx -=1; 
     }
 
-    if(s1_idx < target_s1_idx){
-        for(int i = s1_idx+1;i <=target_s1_idx;i++)
-            sp.S1.at(i-1) = sp.S1.at(i);
-    }else if(s1_idx > target_s1_idx){
-        for(int i = s1_idx-1;i >=target_s1_idx;i--)
-            sp.S1.at(i+1) = sp.S1.at(i);
-    }
-    if(s2_idx < target_s2_idx){
-        for(int i = s2_idx+1;i <=target_s2_idx;i++)
-            sp.S2.at(i-1) = sp.S2.at(i);
-    }else if(s2_idx > target_s2_idx){
-        for(int i = s2_idx-1;i >=target_s2_idx;i--)
-            sp.S2.at(i+1) = sp.S2.at(i);
-    }
-    sp.S1.at(target_s1_idx) = moveBlock;
-    sp.S2.at(target_s2_idx) = moveBlock;
+    if(OriginIdx1)*OriginIdx1 = s1_idx;
+    if(OriginIdx2)*OriginIdx2 = s2_idx;
+    shiftSp(sp.S1,s1_idx,target_s1_idx);
+    shiftSp(sp.S2,s2_idx,target_s2_idx);
+
     sp.setIdx();
 }
 

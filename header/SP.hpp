@@ -48,7 +48,7 @@ public:
     void swapBlock(int swapType,int id1,int id2);// if type = 0 , then swap only in sp1, type = 1 , swap only in sp2  , type = 2, swap both.  
 
     //slack-based move
-    void moveto(int moveBlock,int targetBlock,int relation); 
+    void moveto(int moveBlock,int targetBlock,int relation,int *OriginIdx1=nullptr,int *OriginIdx2=nullptr);
     void fixed_outline_based();
 //for debug
 //private:

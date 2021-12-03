@@ -21,6 +21,20 @@ int main(int argc,char * argv[]){
     srand(0);
     alpha = std::atof(argv[1]);
     Floorplan fp(alpha,argv[2],argv[3]);
+
+
+    int idx1,idx2;
+    fp.sp.showSequence();
+    fp.moveto(3,10,3,&idx1,&idx2);
+    fp.sp.showSequence();
+
+    shiftSp(fp.sp.S1,fp.sp.S1_idx.at(3),idx1);
+    shiftSp(fp.sp.S2,fp.sp.S2_idx.at(3),idx2);
+    fp.sp.showSequence();
+
+
+
+    /*
     std::cout<<"outline"<<fp.outline.first<<" "<<fp.outline.second<<"\n";
 
 
@@ -29,6 +43,9 @@ int main(int argc,char * argv[]){
     //show the width , height
     auto packing = fp.getPacking();
     std::cout<<"width : "<<packing.first<<" height "<<packing.second<<"\n";
+*/
+
+
 
     output(argv[4],fp);
 
@@ -70,7 +87,24 @@ float outlineCost(std::pair<int,int>packing,std::pair<int,int>outline,int &inval
         invalid = 2;
     return (packingR-outlineR)*(packingR-outlineR);
 }
+/*
+int slack_move(Floorplan&fp,int hint,int&id1,int&id2){
 
+    fp.updateSlack();
+    if(hint==0)//both ok
+    {
+
+
+    }
+    else if(hint==1)//packing.first > outline.first , find x_slack = 0
+    {
+
+    }
+    else{ // find y_slack = 0
+
+
+    }
+}*/
 int pick_move(Floorplan&fp,int hint,int&id1,int&id2){
     int op = rand()%3;
     int blockNum = fp.sp.S1.size();
