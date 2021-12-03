@@ -114,4 +114,6 @@ struct compact_args{
     bool(*s2_cmp)(int final,int target);
 };
 void compact_custom(int block,int &pos,compact_args cmp_args);
+int findbiggestSlack(std::vector<int>&slack,int origin);
+int findsmallSlack(std::vector<int>&slack);
 #endif

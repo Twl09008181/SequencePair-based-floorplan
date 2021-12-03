@@ -1,6 +1,6 @@
 
 CXX = g++
-CXXFLAG = -std=c++11
+CXXFLAG = -std=c++11 -g
 
 
 

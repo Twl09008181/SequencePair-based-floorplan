@@ -622,6 +622,16 @@ void Floorplan::updateSlack(){
     for(int i = 0;i<sp.S1.size();i++){
         x_slack.at(i) = xSize - rev_x_pos.at(i) - blockWidth.at(i) - x_pos.at(i);
         y_slack.at(i) = ySize - rev_y_pos.at(i) - blockHeight.at(i) - y_pos.at(i);
+        if(x_slack.at(i)<0)
+        {
+            std::cerr<<"x_slack <0\n";
+            exit(1);
+        }
+        if(y_slack.at(i)<0)
+        {
+            std::cerr<<"y_slack <0\n";
+            exit(1);
+        }
     }
 }
 
@@ -662,6 +672,19 @@ int try_rotate(Floorplan&fp,std::vector<int>&d1,std::vector<int>&d2,std::vector<
     return moveCandidate;
 }
 
+int findsmallSlack(std::vector<int>&slack){
+    int small = INT_MAX_RANGE;
+    int target = -1; 
+    for(int i = 0;i<slack.size();i++)
+    {
+        if(slack.at(i) < small)
+        {
+            small = slack.at(i);
+            target = i;
+        }
+    }
+    return target;
+}
 int findbiggestSlack(std::vector<int>&slack,int origin){
     int max = -1;
     int target = -1;
