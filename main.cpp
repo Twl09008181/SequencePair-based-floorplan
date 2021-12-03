@@ -8,11 +8,16 @@
 
 
 float alpha;
-float fitinRatio = 0.97;
+float fitinRatio = 1;
 
-void SA_Fit(Floorplan&fp,float temp,float decade,float frozen,int k);
+int SA_Fit(Floorplan&fp,float temp,float decade,float frozen,int k);
 void SA_outline(Floorplan&fp,float temp,float decade,float frozen,int k);
 void output(const std::string&filename,Floorplan&fp);
+
+
+
+bool isFitIn(int w,int h,int o_w,int o_h){return w<o_w && h<o_h;}
+
 int main(int argc,char * argv[]){
 
     if(argc!=5){
@@ -24,21 +29,31 @@ int main(int argc,char * argv[]){
     alpha = std::atof(argv[1]);
     Floorplan fp(alpha,argv[2],argv[3]);
 
-
-/*
-    int idx1,idx2;
-    fp.sp.showSequence();
-    fp.moveto(3,10,3,&idx1,&idx2);
-    fp.sp.showSequence();
-
-    shiftSp(fp.sp.S1,fp.sp.S1_idx.at(3),idx1);
-    shiftSp(fp.sp.S2,fp.sp.S2_idx.at(3),idx2);
-    fp.sp.showSequence();
-*/
-
     std::cout<<"outline "<<fp.outline.first<<" "<<fp.outline.second<<"\n";
 
-    SA_Fit(fp,1000000,0.15,100,1000);
+    //first step do fit in  
+    std::vector<int>S1 = fp.sp.S1;
+    std::vector<int>S2 = fp.sp.S2;
+
+    int minArea = INT_MAX_RANGE;
+    for(int i = 0;i<20;i++){
+        int Area = SA_Fit(fp,1000000,0.15,100,1000);
+        if(Area!=0 && Area <= minArea){
+            S1 = fp.sp.S1;
+            S2 = fp.sp.S2;
+            minArea = Area;
+            auto pk = fp.getPacking();
+            std::cout<<"width : "<<pk.first<<" h:"<<pk.second<<"\n";
+        }
+            
+        fitinRatio-=0.01;
+    }
+
+    fp.sp.S1 = S1;
+    fp.sp.S2 = S2;
+
+
+
     // initial packing using greedy approach
     //show the width , height
     auto packing = fp.getPacking();
@@ -77,18 +92,6 @@ void output(const std::string&filename,Floorplan&fp){
    out.close();
 }
 
-float outlineCost(std::pair<int,int>packing,std::pair<int,int>outline,int &invalid ){
-    float outlineR = float(outline.first) / outline.second;
-    float packingR = float(packing.first) / packing.second;
-
-    if(packing.first <= outline.first && packing.second <= outline.second)
-        invalid = 0;
-    else if(packing.first > outline.first)
-        invalid = 1;
-    else if(packing.second > outline.second) 
-        invalid = 2;
-    return invalid ? (packingR-outlineR)*(packingR-outlineR) : 0; // if fit int outline, return 0
-}
 
 
 
@@ -132,7 +135,6 @@ bool climb(float initTemp,float temp,float cost1,float cost2){
 // 還未fit int : cost function設定接近ratio
 // 成功fit in : 不可超出outline的前提下降低area
 float GetR(int w,int h){return float(w)/h;}
-bool isFitIn(int w,int h,int o_w,int o_h){return w<o_w && h<o_h;}
 float getCost(int w,int h,int o_w,int o_h,bool needFitIn){
 
 
@@ -210,7 +212,7 @@ void SA_outline(Floorplan&fp,float temp,float decade,float frozen,int k){
 
 */
 //only consider Area and outline
-void SA_Fit(Floorplan&fp,float temp,float decade,float frozen,int k){
+int SA_Fit(Floorplan&fp,float temp,float decade,float frozen,int k){
 
     float initTemp = temp;
     bool fitin = false;
@@ -247,8 +249,17 @@ void SA_Fit(Floorplan&fp,float temp,float decade,float frozen,int k){
         }
         temp*=decade;
     }
-    if(fitin)
-    {
-        std::cout<<"fit in in ratio:"<<fitinRatio<<"\n";
+
+    packing = fp.getPacking();
+
+    //DEBUG
+    if(isFitIn(packing.first,packing.second,targetW,targetH)){
+        std::cout<<"fit in ratio:"<<fitinRatio<<"\n";
+        std::cout<<"w,h : "<<packing.first<<" "<<packing.second<<" area :"<<packing.first*packing.second<<"\n";
     }
+    if(isFitIn(packing.first,packing.second,fp.outline.first,fp.outline.second)){
+        return packing.first * packing.second;
+    }
+    else
+        return 0;
 }
