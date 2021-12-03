@@ -4,7 +4,6 @@
 #include <set>
 
 
-#define INT_MAX_RANGE 2147483647 
 
 void SequencePair::setIdx()
 {

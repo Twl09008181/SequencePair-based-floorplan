@@ -7,6 +7,7 @@
 #include<fstream>
 #include <list>
 
+#define INT_MAX_RANGE 2147483647
 struct SequencePair{
     std::vector<int>S1;
     std::vector<int>S2;

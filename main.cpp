@@ -8,7 +8,9 @@
 
 
 float alpha;
+float fitinRatio = 0.97;
 
+void SA_Fit(Floorplan&fp,float temp,float decade,float frozen,int k);
 void SA_outline(Floorplan&fp,float temp,float decade,float frozen,int k);
 void output(const std::string&filename,Floorplan&fp);
 int main(int argc,char * argv[]){
@@ -34,15 +36,17 @@ int main(int argc,char * argv[]){
     fp.sp.showSequence();
 */
 
-    std::cout<<"outline"<<fp.outline.first<<" "<<fp.outline.second<<"\n";
+    std::cout<<"outline "<<fp.outline.first<<" "<<fp.outline.second<<"\n";
 
-
-    SA_outline(fp,1000000,0.15,100,1000);
+    SA_Fit(fp,1000000,0.15,100,1000);
     // initial packing using greedy approach
     //show the width , height
     auto packing = fp.getPacking();
     std::cout<<"width : "<<packing.first<<" height "<<packing.second<<"\n";
-
+    std::cout<<"Area : "<<packing.first*packing.second<<"\n";
+    int wl = fp.getHPWL();
+    std::cout<<"wl: "<<wl<<"\n";
+    std::cout<<"cost "<<alpha*packing.first*packing.second+(1-alpha)*wl<<"\n";
 
 
     output(argv[4],fp);
@@ -83,92 +87,15 @@ float outlineCost(std::pair<int,int>packing,std::pair<int,int>outline,int &inval
         invalid = 1;
     else if(packing.second > outline.second) 
         invalid = 2;
-    return (packingR-outlineR)*(packingR-outlineR);
-}
-
-int slack_rotate_x(Floorplan&fp,int &id1){
-    id1 = findsmallSlack(fp.x_slack);
-    fp.rotate(id1);
-    return 0;
-}
-int slack_rotate_y(Floorplan&fp,int &id1){
-    id1 = findsmallSlack(fp.y_slack);
-    fp.rotate(id1);
-    return 0;
-}
-
-//op 4 ,5 
-int slack_move_x(Floorplan&fp,int &id1,int &id2){
-    int b1 = findsmallSlack(fp.x_slack);
-    int b2 = findbiggestSlack(fp.x_slack,b1);
-    if(b2==-1||b1==-1)
-    {
-        std::cerr<<"error\n";
-        exit(1);
-    }
-    int leftOrRight = rand()%2;
-    fp.moveto(b1,b2,leftOrRight,&id1,&id2);
-    return 4 + leftOrRight;
-}
-// op 6 7 
-int slack_move_y(Floorplan&fp,int &id1,int &id2){
-    int b1 = findsmallSlack(fp.y_slack);
-    int b2 = findbiggestSlack(fp.y_slack,b1);
-    if(b2==-1||b1==-1)
-    {
-        std::cerr<<"error\n";
-        exit(1);
-    }
-    int TopOrBot = rand()%2;
-    fp.moveto(b1,b2,TopOrBot,&id1,&id2);
-    return 6 + TopOrBot;
-}
-int slack_move(Floorplan&fp,int hint,int&id1,int&id2){
-    //operation 0 : rotate
-    //operation 4,5 : S1 move left , move right
-    //operation 6,7 : S2 move top , move bottom
-    fp.updateSlack();
-    int rotate = 0; 
-    int op;
-    if(hint==0){//both ok
-        int chooseSeq = rand()%2;
-        if(chooseSeq==0){//find small x_slack
-            if(!rotate)
-                op = slack_move_x(fp,id1,id2);
-            else 
-                op = slack_rotate_x(fp,id1);
-        }
-        else{
-            if(!rotate)
-                op = slack_move_y(fp,id1,id2);
-            else 
-                op = slack_rotate_y(fp,id1);
-        }
-    }
-    else if(hint==1){//packing.first > outline.first , find x_slack = 0
-        if(!rotate)
-            op = slack_move_x(fp,id1,id2);
-        else 
-            op = slack_rotate_x(fp,id1);
-    }
-    else{    
-        if(!rotate)
-            op = slack_move_y(fp,id1,id2);
-        else 
-            op = slack_rotate_y(fp,id1);
-    }
-    return op;
+    return invalid ? (packingR-outlineR)*(packingR-outlineR) : 0; // if fit int outline, return 0
 }
 
 
-int pick_move(Floorplan&fp,int hint,int&id1,int&id2){
-    int slack = 0;
-    //int slack = rand()%2;
-    if(slack)
-        return slack_move(fp,hint,id1,id2);
+
+int pick_move(Floorplan&fp,int&id1,int&id2){
     int blockNum = fp.sp.S1.size();
     id1 = rand()%blockNum;
-    int op = rand()%3;
+    int op = rand()%4;
     if(op==0){
         fp.rotate(id1);
     }
@@ -185,14 +112,8 @@ int pick_move(Floorplan&fp,int hint,int&id1,int&id2){
 void recover(Floorplan&fp,int op,int id1,int id2){
     if(op==0)
         fp.rotate(id1);
-    else if(op < 4) 
+    else 
         fp.swapBlock(op-1,id1,id2);
-    else{
-        if(op==4||op==5)
-            shiftSp(fp.sp.S1,id1,id2);
-        if(op==6||op==7)
-            shiftSp(fp.sp.S2,id1,id2);
-    }
 }
 
 #include<random>
@@ -203,6 +124,30 @@ bool climb(float initTemp,float temp,float cost1,float cost2){
 }
 
 
+//分兩階段
+//先求fit in 
+//再進行優化
+
+//fit in階段
+// 還未fit int : cost function設定接近ratio
+// 成功fit in : 不可超出outline的前提下降低area
+float GetR(int w,int h){return float(w)/h;}
+bool isFitIn(int w,int h,int o_w,int o_h){return w<o_w && h<o_h;}
+float getCost(int w,int h,int o_w,int o_h,bool needFitIn){
+
+
+    if( (w > o_w || h>o_h ) && needFitIn)return INT_MAX_RANGE;
+    if(w>o_w || h>o_h)//return area * (1+100 * ration penalty)
+    {
+        float r1 = GetR(w,h);
+        float r2 = GetR(o_w,o_h);
+        return w*h * (1 + 100 * (r1-r2)*(r1-r2));
+    }
+    else{//return area
+        return w*h;
+    }
+}
+/*
 void SA_outline(Floorplan&fp,float temp,float decade,float frozen,int k){
 
     float initTemp = temp;
@@ -251,6 +196,7 @@ void SA_outline(Floorplan&fp,float temp,float decade,float frozen,int k){
                 float cost1 = alpha * AreaCost1 + (1-alpha) * Wlcost1;
                 float cost2 = alpha * AreaCost2 + (1-alpha) * Wlcost2;
                 if(cost2 < cost1 || climb(initTemp,temp,cost1,cost2))change_state = true;
+
             }
 
             if(!change_state){
@@ -259,5 +205,50 @@ void SA_outline(Floorplan&fp,float temp,float decade,float frozen,int k){
             movetime++;
         }
         temp*=decade;
+    }
+}
+
+*/
+//only consider Area and outline
+void SA_Fit(Floorplan&fp,float temp,float decade,float frozen,int k){
+
+    float initTemp = temp;
+    bool fitin = false;
+    int targetW = fp.outline.first * fitinRatio;
+    int targetH = fp.outline.second * fitinRatio;
+    auto packing = fp.getPacking(); 
+
+    while(temp >= frozen){
+
+        fitin = isFitIn(packing.first,packing.second,targetW,targetH);
+        float cost1 = getCost(packing.first,packing.second,targetW,targetH,false);
+
+        int movetime = 0;
+        //move in same temperature k * n times.
+        while(movetime < k * fp.sp.S1.size()){
+            packing = fp.getPacking(); 
+            fitin = isFitIn(packing.first,packing.second,targetW,targetH);//update fitIn
+
+            //random pick move
+            int id1=-1,id2=-1,op=-1;
+            op = pick_move(fp,id1,id2);
+
+            auto newpacking = fp.getPacking();
+            float cost2 = getCost(newpacking.first,newpacking.second,targetW,targetH,fitin);
+
+            // change state
+            bool change_state = false;
+            if(cost2 < cost1 || climb(initTemp,temp,cost1,cost2))change_state = true;
+            if(change_state)
+                cost1 = cost2;
+            else
+                recover(fp,op,id1,id2);
+            movetime++;
+        }
+        temp*=decade;
+    }
+    if(fitin)
+    {
+        std::cout<<"fit in in ratio:"<<fitinRatio<<"\n";
     }
 }
