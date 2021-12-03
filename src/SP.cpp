@@ -159,16 +159,17 @@ void compact_left_block(int block,int &xpos,SequencePair&sp,std::vector<int>&y_p
     int final_s2_idx = sp.S2_idx.at(block);
 
     bool move = false;
-    int newXpos;
+    int newXpos = 0;
     for(int i = 0;i < Hcstr.size();i++){
         int id = Hcstr.at(i).second;
         if(left.at(id)){ // is target side
             if(overlapIndim(y_pos,blockHeight,block,id)) // overlap in y region
             {
                 newXpos = Hcstr.at(i).first;
-                move = true;
+                if(newXpos!=xpos)move=true;
                 break;
             }  
+            move = true;
             int target_s1_idx = sp.S1_idx.at(id);
             int target_s2_idx = sp.S2_idx.at(id);
             if(y_pos.at(id) >= y_pos.at(block) + blockHeight.at(block)){ //id is higher than block , then put it bellow of the target.
@@ -188,7 +189,6 @@ void compact_left_block(int block,int &xpos,SequencePair&sp,std::vector<int>&y_p
         shiftSp(sp.S1,sp.S1_idx.at(block),final_s1_idx);
         shiftSp(sp.S2,sp.S2_idx.at(block),final_s2_idx);
         sp.setIdx();
-
         //need update the Hcstr? sure! 
         int idx; //find Hcstr's idx
         for(int i = 0;i<Hcstr.size();i++)
@@ -219,6 +219,169 @@ void Floorplan::compact_left(){
     int n = x_pos.size();
     for(int i = 0;i<n;i++){
         compact_left_block(i,x_pos.at(i),sp,y_pos,blockHeight,Hcstr);
+    }
+}
+
+
+
+
+
+void compact_process(int block,int&pos,int newpos,int s1_idx,int s2_idx,compact_args cmp_args){
+    shiftSp(cmp_args.sp->S1,cmp_args.sp->S1_idx.at(block),s1_idx);
+    shiftSp(cmp_args.sp->S2,cmp_args.sp->S2_idx.at(block),s2_idx);
+    cmp_args.sp->setIdx();
+
+    //update the cstr
+    int idx; //find cstr's idx
+    for(int i = 0;i<cmp_args.Movcstr->size();i++)
+        if(cmp_args.Movcstr->at(i).second==block)
+            idx = i;
+
+    int len = cmp_args.Movcstr->at(idx).first - pos;
+    pos = newpos;//update pos
+
+    int newCstr = pos + len;//update cstr
+    //insertion sort
+    int i = idx+1;
+    for(;i<cmp_args.Movcstr->size()&&cmp_args.Movcstr->at(i).first>newCstr;i++){
+        cmp_args.Movcstr->at(i-1) = cmp_args.Movcstr->at(i);
+    }
+    cmp_args.Movcstr->at(i-1).first = newCstr;
+    cmp_args.Movcstr->at(i-1).second = block;
+
+
+}
+
+void compact_custom(int block,int &pos,compact_args cmp_args)
+{
+    //get corresbonding side blocks.
+    // return size : num of blocks
+    // side.at(i) = true iff block i is in the target side.
+    std::vector<bool>side = findSide(*cmp_args.sp,block,cmp_args.sideArg.first,cmp_args.sideArg.second);
+
+    int final_s1_idx = cmp_args.sp->S1_idx.at(block);
+    int final_s2_idx = cmp_args.sp->S2_idx.at(block);
+
+    bool move = false;
+    int newpos=0;//initial to 0 to avoid run out boundary.
+
+    bool overlap = false;
+
+    /*compact searching*/
+    //scan Movcstr and adjust the finalidx in sp.
+    for(int i = 0;i < cmp_args.Movcstr->size();i++){
+        int id = cmp_args.Movcstr->at(i).second;
+        if(side.at(id)){ // is target side
+            if(overlapIndim(*cmp_args.d2_pos,*cmp_args.d2_weight,block,id)) {//stop
+                newpos = cmp_args.Movcstr->at(i).first;
+                overlap = true;
+                if(newpos!=pos)move=true;
+
+                if(block==14)
+                {
+                    std::cout<<"stuck by"<<id<<"\n";
+                    std::cout<<final_s1_idx<<" "<<final_s2_idx<<"\n";
+                    std::cout<<cmp_args.sp->S1_idx.at(block)<<" "<<cmp_args.sp->S2_idx.at(block)<<"\n";
+                }
+
+
+                break;
+            }  
+
+            if(block==14){
+                std::cout<<"check"<<id<<"\n";
+            }
+
+            move = true;//not being block in first check means move happend.
+            int target_s1_idx = cmp_args.sp->S1_idx.at(id);
+            int target_s2_idx = cmp_args.sp->S2_idx.at(id);
+
+            // choose side to insert. for left compact, may choose move block to  top or bottom of block id.
+
+            // put block to bottom or left of id 
+            if(cmp_args.d2_pos->at(id) >= cmp_args.d2_pos->at(block) + cmp_args.d2_weight->at(block)){
+                if(cmp_args.s2_cmp(final_s2_idx ,target_s2_idx))
+                    final_s2_idx = target_s2_idx;
+            }
+            else{
+                if(cmp_args.s1_cmp(final_s2_idx ,target_s2_idx))
+                    final_s1_idx = target_s1_idx;
+            }
+        }
+    }
+
+
+    /*compact searching*/
+    if(move){
+        compact_process(block,pos,newpos,final_s1_idx,final_s2_idx,cmp_args);
+    }
+}
+//
+
+
+void Floorplan::compact_lb(){
+    //sorted by left_bottom 
+    std::vector<int>compact_order(x_pos.size(),0);
+    for(int i = 0;i<compact_order.size();i++)compact_order.at(i) = i;
+    std::sort(compact_order.begin(),compact_order.end(),
+        [this](int a,int b)
+        {
+            if(this->y_pos.at(a) < this->y_pos.at(b))return true;
+            else if(this->y_pos.at(a) > this->y_pos.at(b))return false;
+            else{
+                return this->x_pos.at(a) < this->x_pos.at(b);
+            }
+        }
+    );
+    std::vector<std::pair<int,int>>Hcstr(blockWidth.size(),{0,0});
+    std::vector<std::pair<int,int>>Vcstr(blockHeight.size(),{0,0});
+    for(int i = 0;i<blockHeight.size();i++){
+        Hcstr.at(i).first = x_pos.at(i) + blockWidth.at(i);
+        Hcstr.at(i).second = i;
+        Vcstr.at(i).first = y_pos.at(i) + blockHeight.at(i);
+        Vcstr.at(i).second = i;
+    }
+    std::sort(Hcstr.begin(),Hcstr.end(),[](std::pair<int,int>&p1,std::pair<int,int>&p2){
+        return p1.first > p2.first;
+    });
+    std::sort(Vcstr.begin(),Vcstr.end(),[](std::pair<int,int>&p1,std::pair<int,int>&p2){
+        return p1.first > p2.first;
+    });
+    int n = x_pos.size();
+
+    compact_args leftArgs{
+        {-1,-1},
+        &sp,
+        &y_pos,
+        &blockHeight,
+        &Hcstr,
+        bigger,
+        bigger
+    };
+    compact_args bottomArgs{
+        {1,-1},
+        &sp,
+        &x_pos,
+        &blockWidth,
+        &Vcstr,
+        smaller,
+        bigger
+    };
+    for(int i = 0;i<n;i++){
+        int id = compact_order.at(i);
+        //compact_custom(id,x_pos.at(id),leftArgs);
+        if(id==3)
+        {
+            std::cout<<"befor compact\n";
+            sp.showSequence();
+        }
+        compact_custom(id,y_pos.at(id),bottomArgs);
+        if(id==3)
+        {
+            std::cout<<"after compact\n";
+            sp.showSequence();
+            exit(1);
+        }
     }
 }
 

@@ -65,11 +65,53 @@ public:
     void compact_left();
     void compact_bottom();
 
+    void compact_lb();//compact left bottom
+
 };
 
 void compact_left_block(int block,int &xpos,SequencePair&sp,std::vector<int>&y_pos,std::vector<int>&blockHeight,std::vector<std::pair<int,int>>&Hcstr);
 
 
+inline bool smaller(int a,int b){return a<b;}
+inline bool bigger(int a,int b){return a>b;}
 std::vector<bool> findSide(SequencePair&sp,int block,int s1_dir,int s2_dir);
 void shiftSp(std::vector<int>&sequence,int idxNow,int targetIdx);
+struct compact_args{
+    
+
+    /*   candidate find     */
+    // find left / right / top /bottom side 
+    // <s1 dir ,s2 dir>
+    // left : -1,-1 , right : 1,1  , top : -1,1  bottom : 1,-1
+    std::pair<int,int>sideArg;
+    SequencePair* sp;
+
+    /* overlap checking */
+    std::vector<int>*d2_pos;// the other dimension's position for  overlap check.
+    std::vector<int>*d2_weight;// the other dimension's length for overlap check.
+
+    // use to find constraint candidate
+    // if doing left-compact, d2cstr is sorted by x + w. (same dimension)
+    // the block with biggest value of x + w  must in front of this vector   
+    // so we can check whether can move left or stop(overlap) 
+    // first : cstr value : x+w (for left compact) , second:correspond block id 
+    std::vector<std::pair<int,int>>*Movcstr;
+
+    //sequence cmp function
+    // idx change only when  cmp is true
+    // left compact may change block relation from right(block)/left(other block) to top/bottom(both can happen).    
+    // begin : s1 : <others,block> s2:<others,block>
+    // if change to some block's top , then s1 become : <block,others> ,s2 is unchange.     
+    // so s1_idx need move to -1 dir.
+
+    // if left compact, then both s1,s2 index need move left , so use max compare function (only when final > target, then move)
+
+    // if bottom compact, then s1 need from idx small to idx big , so use min compare function
+    // s2 need from big to small , use max compare function.
+
+    //final,target is corresponding index in sequence.
+    bool(*s1_cmp)(int final,int target);
+    bool(*s2_cmp)(int final,int target);
+};
+void compact_custom(int block,int &pos,compact_args cmp_args);
 #endif
