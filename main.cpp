@@ -30,18 +30,23 @@ int main(int argc,char * argv[]){
     Floorplan fp(alpha,argv[2],argv[3]);
 
 
-    //first step do fit in  
+    //packing relative , need SP and W,H.
     std::vector<int>S1 = fp.sp.S1;
     std::vector<int>S2 = fp.sp.S2;
+    std::vector<int>Width = fp.blockWidth;
+    std::vector<int>Height = fp.blockHeight;
 
+    //first step do fit in  
     int minArea = INT_MAX_RANGE;
     for(int i = 0;i<10;i++){
         int Area = SA_Fit(fp,1000000,0.15,100,1000);
-        if(Area!=0 && Area <= minArea){
+        if(Area!=0 && Area < minArea){
             S1 = fp.sp.S1;
             S2 = fp.sp.S2;
+            Width = fp.blockWidth;
+            Height = fp.blockHeight;
             minArea = Area;
-            
+        
             #ifdef DEBUG
             auto packing = fp.getPacking();
             std::cout<<"width : "<<packing.first<<" height "<<packing.second<<"\n";
@@ -52,9 +57,10 @@ int main(int argc,char * argv[]){
     }
     fp.sp.S1 = S1;
     fp.sp.S2 = S2;
+    fp.blockHeight = Height;
+    fp.blockWidth = Width;
 
-
-    #ifdef DEBUG
+   #ifdef DEBUG
     std::cout<<"After Fit in process :\n";
     std::cout<<"outline "<<fp.outline.first<<" "<<fp.outline.second<<"\n";
     //show the width , height
@@ -73,6 +79,8 @@ int main(int argc,char * argv[]){
         if(cost <= minCost){
             S1 = fp.sp.S1;
             S2 = fp.sp.S2;
+            Width = fp.blockWidth;
+            Height = fp.blockHeight;
             minCost = cost;
             #ifdef DEBUG
             packing = fp.getPacking();
@@ -85,6 +93,8 @@ int main(int argc,char * argv[]){
     }
     fp.sp.S1 = S1;
     fp.sp.S2 = S2;
+    fp.blockHeight = Height;
+    fp.blockWidth = Width;
 
     #ifdef DEBUG
     std::cout<<"After Optimization process :\n";
@@ -98,8 +108,6 @@ int main(int argc,char * argv[]){
     std::cout<<"cost "<<alpha*packing.first*packing.second+(1-alpha)*wl<<"\n";
     #endif
 
-
-
     output(argv[4],fp);
 
 
@@ -108,19 +116,25 @@ int main(int argc,char * argv[]){
 }
 
 void output(const std::string&filename,Floorplan&fp){
-   auto packing = fp.getPacking();
-   std::ofstream out {filename};
-   if(!out){
-    std::cerr<<"file can't open!\n";
-    exit(1);
-   }
+    auto packing = fp.getPacking();
+    std::ofstream out {filename};
+    if(!out){
+        std::cerr<<"file can't open!\n";
+        exit(1);
+    }
+    int hpwl = fp.getHPWL();
 
- //  fp.getPacking();
-    out << fp.outline.first<<" "<<fp.outline.second<<"\n";
-    out << fp.blockHeight.size()<<"\n";
-    for(int i = 0;i<fp.blockWidth.size();i++)
-        out << fp.x_pos[i]<<" "<<fp.y_pos[i]<<" "<<fp.blockWidth[i]<<" "<<fp.blockHeight[i]<<" \n";
-    
+    int area = packing.first * packing.second;
+    out << int(fp.alpha * area +  (1-alpha) * hpwl)<<"\n";
+    out << hpwl<<"\n";
+    out << area<<"\n";
+    out << packing.first <<" "<<packing.second<<"\n";
+    out << 0.1<<"\n";
+
+    for(auto ptr:fp.blockMap){
+        int i = ptr.second;
+        out <<ptr.first<<" "<< fp.x_pos[i]<<" "<<fp.y_pos[i]<<" "<<fp.x_pos[i]+fp.blockWidth[i]<<" "<<fp.y_pos[i]+fp.blockHeight[i]<<" \n";
+    }
 
    out.close();
 }
