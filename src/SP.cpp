@@ -616,7 +616,7 @@ void Floorplan::updateSlack(){
     reverse(sp.S2);
     int xSize =  LCS(sp.S1,sp.S2,blockWidth,rev_x_pos);// from right
     reverse(sp.S1);
-    int ySize =  LCS(sp.S1,sp.S2,blockWidth,rev_y_pos);//from top
+    int ySize =  LCS(sp.S1,sp.S2,blockHeight,rev_y_pos);//from top
     //recover S2
     reverse(sp.S2);
     for(int i = 0;i<sp.S1.size();i++){
