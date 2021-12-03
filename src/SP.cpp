@@ -554,7 +554,7 @@ int Floorplan::getHPWL(){
             if (x <  l)l = x;
             if (x >  r)r = x;
             if (y <  d)d = y;
-            if (y <  t)t = y;
+            if (y >  t)t = y;
         }
         for(auto ptr = term.begin();ptr!=term.end();++ptr){
             int tid = *ptr;
@@ -563,7 +563,7 @@ int Floorplan::getHPWL(){
             if (x <  l)l = x;
             if (x >  r)r = x;
             if (y <  d)d = y;
-            if (y <  t)t = y;
+            if (y >  t)t = y;
         }
         int x_l = r-l;
         int y_l = t-d;
