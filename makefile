@@ -1,13 +1,14 @@
 
 CXX = g++
 CXXFLAG = -std=c++11 -g
-
+DEBUG = NODEBUG
+CPPFLAG = -D $(DEBUG)
 
 
 
 
 Lab3 : main.cpp src/SP.o
-	$(CXX) $(CXXFLAG) -o $@ $^ 
+	$(CXX) $(CPPFLAG) $(CXXFLAG)  -o $@ $^ 
 
 
 src/SP.o : src/SP.cpp header/SP.hpp
