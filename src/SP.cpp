@@ -564,8 +564,8 @@ int Floorplan::getHPWL(){
             if (y <  d)d = y;
             if (y >  t)t = y;
         }
-        int x_l = r-l;
-        int y_l = t-d;
+        int x_l = int(r)-int(l);
+        int y_l = int(t)-int(d);
         length += (x_l + y_l);
     }
     return length;
