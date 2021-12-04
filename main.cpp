@@ -3,6 +3,7 @@
 #include<vector>
 #include "header/SP.hpp"
 #include <string>
+#include <ctime>
 
 
 
@@ -14,9 +15,8 @@ int SA_Fit(Floorplan&fp,float temp,float decade,float frozen,int k);
 float SA_Opt(Floorplan&fp,float temp,float decade,float frozen,int k);
 void output(const std::string&filename,Floorplan&fp);
 
+float execute_time;
 
-
-bool isFitIn(int w,int h,int o_w,int o_h){return w<o_w && h<o_h;}
 
 int main(int argc,char * argv[]){
 
@@ -24,13 +24,14 @@ int main(int argc,char * argv[]){
         std::cerr<<"please enter correct format!  $ ./Lab3.exe <alpha> <input.block name> <input.net name> <output name>  \n";
         exit(1);
     }
+    clock_t time_start = clock();
 
     srand(0);
     alpha = std::stod(argv[1]);
     Floorplan fp(alpha,argv[2],argv[3]);
 
 
-    //packing relative , need SP and W,H.
+    /*      packing relative , need SP and W,H.*/
     std::vector<int>S1 = fp.sp.S1;
     std::vector<int>S2 = fp.sp.S2;
     std::vector<int>Width = fp.blockWidth;
@@ -108,6 +109,10 @@ int main(int argc,char * argv[]){
     std::cout<<"cost "<<alpha*packing.first*packing.second+(1-alpha)*wl<<"\n";
     #endif
 
+    clock_t time_end = clock();
+    execute_time = float(time_end-time_start) / CLOCKS_PER_SEC;
+
+
     output(argv[4],fp);
 
 
@@ -131,7 +136,7 @@ void output(const std::string&filename,Floorplan&fp){
     out << hpwl<<"\n";
     out << area<<"\n";
     out << packing.first <<" "<<packing.second<<"\n";
-    out << 0.1<<"\n";
+    out << execute_time<<"\n";
 
     for(auto ptr:fp.blockMap){
         int i = ptr.second;
@@ -172,37 +177,19 @@ void recover(Floorplan&fp,int op,int id1,int id2){
 bool climb(float initTemp,float temp,float cost1,float cost2){
     float chance = rand() / RAND_MAX;
     int delta_cost = cost2 - cost1;
-    return chance < std::exp(-delta_cost * initTemp/temp);//t越小,exp值越小,越不可能跳,delta越大,越不可能跳
+    return chance < std::exp(-delta_cost * initTemp/temp);
 }
 
 
-//分兩階段
-//先求fit in 
-//再進行優化
-
-//fit in階段
-// 還未fit int : cost function設定接近ratio
-// 成功fit in : 不可超出outline的前提下降低area
-float GetR(int w,int h){return float(w)/h;}
-float getCost(int w,int h,int o_w,int o_h,bool needFitIn){
-
-
-    if( (w > o_w || h>o_h ) && needFitIn)return INT_MAX_RANGE;
-    if(w>o_w || h>o_h)//return area * (1+100 * ration penalty)
-    {
-        float r1 = GetR(w,h);
-        float r2 = GetR(o_w,o_h);
-        return w*h * (1 + 100 * (r1-r2)*(r1-r2));
-    }
-    else{//return area
-        return w*h;
-    }
-}
 float OptimizationCost(int w,int h,int o_w,int o_h,int wl,float alpha){
     //when optimizie the area , wl , it can't hapen over outline.
     if (w > o_w || h>o_h )return INT_MAX_RANGE;
     return alpha*w*h + (1-alpha)*wl;
 }
+
+
+/*SA_Opt  */
+// consider the given objective function.
 float  SA_Opt(Floorplan&fp,float temp,float decade,float frozen,int k){
 
     float initTemp = temp;
@@ -238,6 +225,23 @@ float  SA_Opt(Floorplan&fp,float temp,float decade,float frozen,int k){
     return alpha*packing.first*packing.second + (1-alpha)*fp.getHPWL(); 
 }
 
+
+/* SA_Fit   :   consider shrink area and fit outline only.*/ 
+
+float GetR(int w,int h){return float(w)/h;}
+float getCost(int w,int h,int o_w,int o_h,bool needFitIn){
+    if( (w > o_w || h>o_h ) && needFitIn)return INT_MAX_RANGE;
+    if(w>o_w || h>o_h)//return area * (1+100 * ration penalty)
+    {
+        float r1 = GetR(w,h);
+        float r2 = GetR(o_w,o_h);
+        return w*h * (1 + 100 * (r1-r2)*(r1-r2));
+    }
+    else{//return area
+        return w*h;
+    }
+}
+bool isFitIn(int w,int h,int o_w,int o_h){return w<o_w && h<o_h;}
 //only consider Area and outline
 int SA_Fit(Floorplan&fp,float temp,float decade,float frozen,int k){
 
