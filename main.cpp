@@ -7,7 +7,7 @@
 
 
 
-float alpha;
+double alpha;
 float fitinRatio = 1;
 
 int SA_Fit(Floorplan&fp,float temp,float decade,float frozen,int k);
@@ -26,7 +26,7 @@ int main(int argc,char * argv[]){
     }
 
     srand(0);
-    alpha = std::atof(argv[1]);
+    alpha = std::stod(argv[1]);
     Floorplan fp(alpha,argv[2],argv[3]);
 
 
@@ -125,7 +125,9 @@ void output(const std::string&filename,Floorplan&fp){
     int hpwl = fp.getHPWL();
 
     int area = packing.first * packing.second;
-    out << int(fp.alpha * area +  (1-alpha) * hpwl)<<"\n";
+    
+
+    out << int(alpha * area +  (1-alpha) * hpwl)<<"\n";
     out << hpwl<<"\n";
     out << area<<"\n";
     out << packing.first <<" "<<packing.second<<"\n";
