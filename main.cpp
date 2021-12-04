@@ -121,27 +121,22 @@ int main(int argc,char * argv[]){
 }
 
 void output(const std::string&filename,Floorplan&fp){
-    auto packing = fp.getPacking();
-    std::ofstream out {filename};
-    if(!out){
-        std::cerr<<"file can't open!\n";
-        exit(1);
-    }
-    int hpwl = fp.getHPWL();
+    /*
+        not done
+    */
 
-    int area = packing.first * packing.second;
+   std::ofstream out {filename};
+   if(!out){
+    std::cerr<<"file can't open!\n";
+    exit(1);
+   }
+
+ //  fp.getPacking();
+    out << fp.outline.first<<" "<<fp.outline.second<<"\n";
+    out << fp.blockHeight.size()<<"\n";
+    for(int i = 0;i<fp.blockWidth.size();i++)
+        out << fp.x_pos[i]<<" "<<fp.y_pos[i]<<" "<<fp.blockWidth[i]<<" "<<fp.blockHeight[i]<<" \n";
     
-
-    out << int(alpha * area +  (1-alpha) * hpwl)<<"\n";
-    out << hpwl<<"\n";
-    out << area<<"\n";
-    out << packing.first <<" "<<packing.second<<"\n";
-    out << execute_time<<"\n";
-
-    for(auto ptr:fp.blockMap){
-        int i = ptr.second;
-        out <<ptr.first<<" "<< fp.x_pos[i]<<" "<<fp.y_pos[i]<<" "<<fp.x_pos[i]+fp.blockWidth[i]<<" "<<fp.y_pos[i]+fp.blockHeight[i]<<" \n";
-    }
 
    out.close();
 }

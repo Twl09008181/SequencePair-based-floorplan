@@ -1,3 +1,4 @@
+from matplotlib.lines import Line2D
 import matplotlib.pyplot
 
 
@@ -8,7 +9,7 @@ from matplotlib.patches import Rectangle
 
 
 
-def drawLayout(width,height,x_pos,y_pos):
+def drawLayout(outline,width,height,x_pos,y_pos):
     #define Matplotlib figure and axis
     fig, ax = plt.subplots()
 
@@ -24,6 +25,9 @@ def drawLayout(width,height,x_pos,y_pos):
 
     ax.set_xlim(0,max(max_x,max_y))
     ax.set_ylim(0,max(max_x,max_y))
+    outx,outy = outline
+    ax.add_line(Line2D([outx,outx],[0,outy],linewidth=5,color="red"))
+    ax.add_line(Line2D([0,outx],[outy,outy],linewidth=5,color="red"))
     ax.plot()
 
     #display plot
@@ -33,6 +37,8 @@ def drawLayout(width,height,x_pos,y_pos):
 
 layout = open("Layout","r")
 outline_x,outline_y = layout.readline().split()
+outline_x = int(outline_x)
+outline_y = int(outline_y)
 blockNum = int(layout.readline())
 print("outline :",outline_x," ",outline_y)
 print("blockNum: ",blockNum)
@@ -56,7 +62,7 @@ print(y_pos)
 print(width)
 print(height)
 
-drawLayout(width,height,x_pos,y_pos)
+drawLayout((outline_x,outline_y),width,height,x_pos,y_pos)
 
 
 
